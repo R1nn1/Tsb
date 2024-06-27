@@ -4,13 +4,7 @@ local NotificationHolder = loadstring(game:HttpGet("https://raw.githubuserconten
 local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))()
 
 Notification:Notify(
-    {Title = "Thank You for Using Rinns Hub", Description = "Join The Discord server to report any bugs or give suggestions https://discord.com/invite/x55Rw6PD7x"},
-    {OutlineColor = Color3.fromRGB(80, 80, 80), Time = 8, Type = "option"},
-    {Image = "http://www.roblox.com/asset/?id=6023426923", ImageColor = Color3.fromRGB(255, 84, 84), Callback = function(State) print(tostring(State)) end}
-)
-
-Notification:Notify(
-    {Title = "IMPORTANT", Description = "If any of the toggles are already green you have to turn it off by clicking it and turning it back on by clicking it again for the feature to work"},
+    {Title = "IMPORTANT", Description = "If any of the toggles are already green turn it off then turn it on for the feature to work black = off green = on"},
     {OutlineColor = Color3.fromRGB(80, 80, 80), Time = 8, Type = "option"},
     {Image = "http://www.roblox.com/asset/?id=6023426923", ImageColor = Color3.fromRGB(255, 84, 84), Callback = function(State) print(tostring(State)) end}
 )
@@ -19,151 +13,25 @@ local window = DrRayLibrary:Load("Rinns Hub", "Default")
 
 local tab = DrRayLibrary.newTab("Main Tab", "ImageIdHere")
 
-local autoAttackRange = 13
-local autoBlockRange = 13
-local autoAttackEnabled = false
-local autoBlockEnabled = false
 local aimbotEnabled = false
 local aimbotCircleSize = 100
+local aimbotCircle = nil
+local teleportToSafePlaceEnabled = false
+local originalPosition = nil
 
--- Function to check for players within a given range
-local function isPlayerInRange(range)
-    local localPlayer = game.Players.LocalPlayer
-    for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local distance = (player.Character.HumanoidRootPart.Position - localPlayer.Character.HumanoidRootPart.Position).magnitude
-            if distance <= range then
-                return true
-            end
-        end
-    end
-    return false
-end
-
--- Auto Attack Toggle
-tab.newToggle("Auto Attack", "Automatically attacks when a player is in range", false, function(toggleState)
-    autoAttackEnabled = toggleState
-    if autoAttackEnabled then
-        spawn(function()
-            while autoAttackEnabled do
-                if isPlayerInRange(autoAttackRange) then
-                    local args = {
-                        [1] = {
-                            ["Goal"] = "LeftClick",
-                            ["Mobile"] = true
-                        }
-                    }
-                    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
-                end
-                wait(0.6)
-            end
-        end)
-    end
-end)
-
--- Auto Attack Range Slider
-tab.newSlider("Auto Attack Range", "Change the range of the Auto Attack", 30, false, function(num)
-    autoAttackRange = num
-end)
-
--- Auto Block Toggle
-tab.newToggle("Auto Block", "Blocks for you when a player is in range", false, function(toggleState)
-    autoBlockEnabled = toggleState
-    local autoBlockActive = false
-
-    if autoBlockEnabled then
-        local args = {
-            [1] = {
-                ["Goal"] = "KeyRelease",
-                ["Key"] = Enum.KeyCode.F
-            }
-        }
-        game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
-    end
-
-    local function getNil(name, class)
-        for _, v in next, getnilinstances() do
-            if v.ClassName == class and v.Name == name then
-                return v
-            end
-        end
-    end
-
-    spawn(function()
-        while autoBlockEnabled do
-            if isPlayerInRange(autoBlockRange) then
-                if not autoBlockActive then
-                    local args = {
-                        [1] = {
-                            ["Goal"] = "KeyPress",
-                            ["Key"] = Enum.KeyCode.F
-                        }
-                    }
-                    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
-                    autoBlockActive = true
-                end
-            else
-                if autoBlockActive then
-                    local args = {
-                        [1] = {
-                            ["Goal"] = "KeyRelease",
-                            ["Key"] = Enum.KeyCode.F
-                        }
-                    }
-                    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
-                    autoBlockActive = false
-                end
-            end
-
-            -- Detect specific movement and respond
-            local bv = getNil("moveme", "BodyVelocity")
-            if bv then
-                local args = {
-                    [1] = {
-                        ["Goal"] = "delete bv",
-                        ["BV"] = bv
-                    }
-                }
-                game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
-            end
-
-            wait(0.1)
-        end
-    end)
-end)
-
--- Auto Block Range Slider
-tab.newSlider("Auto Block Range", "Change the range of the Auto Block", 30, false, function(num)
-    autoBlockRange = num
-end)
-
--- No Stun Button
-tab.newButton("No Stun", "Disables or reduces stun effects only click once", function()
-    local function isNumber(str)
-        return tonumber(str) ~= nil or str == 'inf'
-    end
-
-    local tspeed = 0.3
-    local hb = game:GetService("RunService").Heartbeat
-    local tpwalking = true
-    local player = game:GetService("Players")
-    local lplr = player.LocalPlayer
-    local chr = lplr.Character
-    local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
-
-    while tpwalking and hb:Wait() and chr and hum and hum.Parent do
-        if hum.MoveDirection.Magnitude > 0 then
-            if tspeed and isNumber(tspeed) then
-                chr:TranslateBy(hum.MoveDirection * tonumber(tspeed))
-            else
-                chr:TranslateBy(hum.MoveDirection)
-            end
-        end
-    end
-end)
+-- Create a really big part at the specified position
+local bigPart = Instance.new("Part")
+bigPart.Size = Vector3.new(100, 1, 100)
+bigPart.Position = Vector3.new(-10487.8212890625, 16371.6865234375, -19404.552734375)
+bigPart.Anchored = true
+bigPart.Parent = game.Workspace
 
 -- New Text Input for Combo Maker
 tab.newInput("Combo Maker", "Enter your combo commands here (punch();wait(x);firstskill();secondskill();thirdskill();fourthskill();dash();downslam();moveforward();movebackward())", function(text)
+    if text == "" then
+        return
+    end
+
     print("Entered text: " .. text)
 
     -- Create a new tool when input is finished
@@ -227,42 +95,125 @@ tab.newInput("Combo Maker", "Enter your combo commands here (punch();wait(x);fir
                         }
                     }
                     game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(argsRelease))
+                    wait(0.35)
                 elseif command == "dash()" then
                     local args = {
                         [1] = {
-                            ["Goal"] = "Dash"
+                            ["Dash"] = Enum.KeyCode.W,
+                            ["Key"] = Enum.KeyCode.Q,
+                            ["Goal"] = "KeyPress"
                         }
                     }
                     game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+                    function getNil(name, class) 
+                        for _, v in pairs(getnilinstances()) do 
+                            if v.ClassName == class and v.Name == name then 
+                                return v
+                            end 
+                        end 
+                    end
+
+                    local args = {
+                        [1] = {
+                            ["Goal"] = "delete bv",
+                            ["BV"] = getNil("moveme", "BodyVelocity")
+                        }
+                    }
+
+                    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+                    wait(0.85)
                 elseif command == "downslam()" then
                     local args = {
                         [1] = {
-                            ["Goal"] = "DownSlam"
+                            ["Goal"] = "LeftClick",
+                            ["Mobile"] = true
                         }
                     }
                     game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+
+                    local argsRelease = {
+                        [1] = {
+                            ["Goal"] = "LeftClickRelease",
+                            ["Mobile"] = true
+                        }
+                    }
+                    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(argsRelease))
+                    wait(0.36)
+
+                    local args = {
+                        [1] = {
+                            ["Goal"] = "LeftClick",
+                            ["Mobile"] = true
+                        }
+                    }
+                    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+
+                    local argsRelease = {
+                        [1] = {
+                            ["Goal"] = "LeftClickRelease",
+                            ["Mobile"] = true
+                        }
+                    }
+                    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(argsRelease))
+                    wait(0.36)
+
+                    local args = {
+                        [1] = {
+                            ["Goal"] = "LeftClick",
+                            ["Mobile"] = true
+                        }
+                    }
+                    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+
+                    local argsRelease = {
+                        [1] = {
+                            ["Goal"] = "LeftClickRelease",
+                            ["Mobile"] = true
+                        }
+                    }
+                    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(argsRelease))
+                    wait(0.33)
+
+                    game.Players.LocalPlayer.Character.Humanoid.Jump = true
+                    wait(0.15)
+
+                    local args = {
+                        [1] = {
+                            ["Goal"] = "LeftClick",
+                            ["Mobile"] = true
+                        }
+                    }
+                    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+
+                    local argsRelease = {
+                        [1] = {
+                            ["Goal"] = "LeftClickRelease",
+                            ["Mobile"] = true
+                        }
+                    }
+                    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(argsRelease))
+                    wait(0.1)
+
                 elseif command == "moveforward()" then
-                    local args = {
-                        [1] = {
-                            ["Goal"] = "MoveF"
-                        }
-                    }
-                    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+                    local localPlayer = game.Players.LocalPlayer
+                    if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        localPlayer.Character.HumanoidRootPart.CFrame = localPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
+                    end
                 elseif command == "movebackward()" then
-                    local args = {
-                        [1] = {
-                            ["Goal"] = "MoveB"
-                        }
-                    }
-                    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+                    local localPlayer = game.Players.LocalPlayer
+                    if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        localPlayer.Character.HumanoidRootPart.CFrame = localPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 5)
+                    end
                 end
             end
         end)
     end
 
     tool.Activated:Connect(executeCommands)
+
     tool.Parent = localPlayer.Backpack
 end)
+
 
 -- Toggle for Aimbot
 tab.newToggle("Aimbot", "Enables Aimbot to target the nearest player", false, function(toggleState)
@@ -273,7 +224,7 @@ tab.newToggle("Aimbot", "Enables Aimbot to target the nearest player", false, fu
 
         local circle = Drawing.new("Circle")
         circle.Thickness = 2
-        circle.Transparency = 1
+        circle.Transparency = 0.4
         circle.Color = Color3.fromRGB(255, 255, 255)
         circle.NumSides = 100
         circle.Filled = false
@@ -311,247 +262,326 @@ tab.newToggle("Aimbot", "Enables Aimbot to target the nearest player", false, fu
 end)
 
 -- Slider for Aimbot Circle Size
-tab.newSlider("Aimbot Circle Size", "Change the size of the Aimbot circle", 300, false, function(num)
-    aimbotCircleSize = num
+tab.newSlider("Aimbot Circle Size", "Change the size of the Aimbot circle", 450,
+false, function(value)
+    aimbotCircleSize = value
 end)
 
--- Misc Tab for new toggle
+-- Toggle for Teleport to Safe Place
+tab.newToggle("Teleport to Safe Place When low", "Teleports you to a safe place when your low", false, function(toggleState)
+    teleportToSafePlaceEnabled = toggleState
+    local player = game.Players.LocalPlayer
+    local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
+
+    local function checkHealth()
+        if teleportToSafePlaceEnabled and humanoid and humanoid.Health <= 15 then
+            if not originalPosition then
+                originalPosition = player.Character.PrimaryPart.Position
+            end
+            local safePlace = Vector3.new(-10492.9931640625, 16379.8828125, -19407.078125)
+            player.Character:SetPrimaryPartCFrame(CFrame.new(safePlace))
+        elseif originalPosition and humanoid and humanoid.Health >= 30 then
+            player.Character:SetPrimaryPartCFrame(CFrame.new(originalPosition))
+            originalPosition = nil
+        end
+    end
+
+    local healthCheckConnection
+
+    if teleportToSafePlaceEnabled then
+        healthCheckConnection = game:GetService("RunService").RenderStepped:Connect(checkHealth)
+        checkHealth()
+    else
+        if healthCheckConnection then
+            healthCheckConnection:Disconnect()
+            healthCheckConnection = nil
+        end
+        if originalPosition then
+            player.Character:SetPrimaryPartCFrame(CFrame.new(originalPosition))
+            originalPosition = nil
+        end
+    end
+end)
+
+-- No Stun Button
+tab.newButton("No Stun", "Disables or reduces stun effects only click once", function()
+    local function isNumber(str)
+        return tonumber(str) ~= nil or str == 'inf'
+    end
+
+    local tspeed = 0.3
+    local hb = game:GetService("RunService").Heartbeat
+    local tpwalking = true
+    local player = game:GetService("Players")
+    local lplr = player.LocalPlayer
+    local chr = lplr.Character
+    local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+
+    while tpwalking and hb:Wait() and chr and hum and hum.Parent do
+        if hum.MoveDirection.Magnitude > 0 then
+            if tspeed and isNumber(tspeed) then
+                chr:TranslateBy(hum.MoveDirection * tonumber(tspeed))
+            else
+                chr:TranslateBy(hum.MoveDirection)
+            end
+        end
+    end
+end)
+
+-- settings
+local settings = {
+    defaultcolor = Color3.fromRGB(255, 0, 0),
+    teamcheck = false,
+    teamcolor = true,
+    boxESPEnabled = false,
+    tracersEnabled = false
+};
+
+-- services
+local runService = game:GetService("RunService");
+local players = game:GetService("Players");
+
+-- variables
+local localPlayer = players.LocalPlayer;
+local camera = workspace.CurrentCamera;
+
+-- functions
+local newVector2, newColor3, newDrawing = Vector2.new, Color3.new, Drawing.new;
+local tan, rad = math.tan, math.rad;
+local round = function(...) local a = {}; for i, v in next, table.pack(...) do a[i] = math.round(v); end return unpack(a); end;
+local wtvp = function(...) local a, b = camera.WorldToViewportPoint(camera, ...) return newVector2(a.X, a.Y), b, a.Z end;
+
+local espCache = {};
+
+local function createEsp(player)
+    local drawings = {};
+
+    drawings.box = newDrawing("Square");
+    drawings.box.Thickness = 1;
+    drawings.box.Filled = false;
+    drawings.box.Color = settings.defaultcolor;
+    drawings.box.Visible = false;
+    drawings.box.ZIndex = 2;
+
+    drawings.boxoutline = newDrawing("Square");
+    drawings.boxoutline.Thickness = 2; -- Making the outline thinner
+    drawings.boxoutline.Filled = false;
+    drawings.boxoutline.Color = newColor3();
+    drawings.boxoutline.Visible = false;
+    drawings.boxoutline.ZIndex = 1;
+
+    drawings.tracer = newDrawing("Line");
+    drawings.tracer.Thickness = 1;
+    drawings.tracer.Color = settings.defaultcolor;
+    drawings.tracer.Visible = false;
+    drawings.tracer.ZIndex = 1;
+
+    espCache[player] = drawings;
+end
+
+local function removeEsp(player)
+    if rawget(espCache, player) then
+        for _, drawing in next, espCache[player] do
+            drawing:Remove();
+        end
+        espCache[player] = nil;
+    end
+end
+
+local function updateEsp(player, esp)
+    local character = player and player.Character;
+    if character then
+        local head = character:FindFirstChild("Head");
+        local rootPart = character:FindFirstChild("HumanoidRootPart");
+        if head and rootPart then
+            local headPos, headVisible = wtvp(head.Position);
+            local rootPos, rootVisible = wtvp(rootPart.Position);
+            local visible = headVisible and rootVisible;
+            
+            esp.box.Visible = visible and settings.boxESPEnabled;
+            esp.boxoutline.Visible = visible and settings.boxESPEnabled;
+            esp.tracer.Visible = visible and settings.tracersEnabled;
+
+            if visible then
+                local min = character:GetModelCFrame().Position - Vector3.new(2, 3, 0);
+                local max = character:GetModelCFrame().Position + Vector3.new(2, 3, 0);
+                local minPos, minVisible = wtvp(min);
+                local maxPos, maxVisible = wtvp(max);
+                if minVisible and maxVisible then
+                    local width = math.abs(minPos.X - maxPos.X);
+                    local height = math.abs(minPos.Y - maxPos.Y);
+                    local x, y = round(minPos.X, minPos.Y);
+
+                    esp.box.Size = newVector2(width, height);
+                    esp.box.Position = newVector2(round(x - width / 2, y - height / 2));
+                    esp.box.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor;
+
+                    esp.boxoutline.Size = esp.box.Size;
+                    esp.boxoutline.Position = esp.box.Position;
+
+                    local localHead = localPlayer.Character and localPlayer.Character:FindFirstChild("Head");
+                    if localHead then
+                        local localHeadPos = wtvp(localHead.Position);
+                        esp.tracer.From = localHeadPos;
+                        esp.tracer.To = headPos;
+                        esp.tracer.Color = esp.box.Color;
+                    end
+                end
+            end
+        end
+    else
+        esp.box.Visible = false;
+        esp.boxoutline.Visible = false;
+        esp.tracer.Visible = false;
+    end
+end
+
+local function rainbowColorTransition()
+    local t = tick() * 0.1
+    return Color3.fromHSV(t % 1, 1, 1)
+end
+
+-- main
+for _, player in next, players:GetPlayers() do
+    if player ~= localPlayer then
+        createEsp(player);
+    end
+end
+
+players.PlayerAdded:Connect(function(player)
+    createEsp(player);
+end);
+
+players.PlayerRemoving:Connect(function(player)
+    removeEsp(player);
+end)
+
+runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
+    for player, drawings in next, espCache do
+        if settings.teamcheck and player.Team == localPlayer.Team then
+            continue;
+        end
+
+        if drawings and player ~= localPlayer then
+            updateEsp(player, drawings);
+            drawings.box.Color = rainbowColorTransition();
+            drawings.tracer.Color = drawings.box.Color;
+        end
+    end
+end)
+
+-- GUI integration
+local tab = DrRayLibrary.newTab("Esp Tab", "ImageIdHere")
+
+tab.newToggle("Box Esp", "Draws a box around every player", true, function(toggleState)
+    settings.boxESPEnabled = toggleState
+end)
+
+tab.newToggle("Tracers Esp", "Draws a line to every player", true, function(toggleState)
+    settings.tracersEnabled = toggleState
+end)
+
 local tab = DrRayLibrary.newTab("Misc Tab", "ImageIdHere")
 
--- Teleport to Safe Place Toggle
-local teleportEnabled = false
-local originalPosition = nil
-
-tab.newToggle("Teleport to Safe Place When Low", "Teleports you to a safe place when health is low", false, function(toggleState)
-    teleportEnabled = toggleState
-    if teleportEnabled then
-        game:GetService("RunService").RenderStepped:Connect(function()
-            if teleportEnabled then
-                local localPlayer = game.Players.LocalPlayer
-                if localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
-                    local health = localPlayer.Character.Humanoid.Health
-                    if health < 15 then
-                        if not originalPosition then
-                            originalPosition = localPlayer.Character.HumanoidRootPart.Position
-                        end
-                        localPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(Vector3.new(0, 100, 0))
-                    elseif health > 35 and originalPosition then
-                        localPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(originalPosition)
-                        originalPosition = nil
-                    end
-                end
-            end
-        end)
-    end
+tab.newButton("Change To The Strongest Hero", "Changes your character to the strongest hero", function()
+    local args = {
+        [1] = {
+            ["Goal"] = "Change Character",
+            ["Character"] = "Bald"
+        }
+    }
+    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
 end)
 
--- Add ESP tab and toggles
-local espTab = DrRayLibrary.newTab("ESP Tab", "ImageIdHere")
-local boxEspEnabled = false
-local nameEspEnabled = false
-local tracersEspEnabled = false
-local ultimateEspEnabled = false
-
--- Function to create an outline around a player
-local function createOutline(player)
-    if player ~= game.Players.LocalPlayer and player.Character then
-        for _, part in pairs(player.Character:GetChildren()) do
-            if part:IsA("BasePart") then
-                local highlight = Instance.new("SelectionBox")
-                highlight.Adornee = part
-                highlight.LineThickness = 0.05
-                highlight.Color3 = Color3.new(1, 1, 1)  -- White color
-                highlight.SurfaceTransparency = 0.8
-                highlight.Name = "ESPOutline"
-                highlight.Parent = part
-            end
-        end
-    end
-end
-
--- Function to remove the outline from a player
-local function removeOutline(player)
-    if player.Character then
-        for _, part in pairs(player.Character:GetChildren()) do
-            if part:IsA("BasePart") and part:FindFirstChild("ESPOutline") then
-                part:FindFirstChild("ESPOutline"):Destroy()
-            end
-        end
-    end
-end
-
--- Function to create or update billboards for players
-local function updateBillboard(player, text, guiName, textLabelName, offset)
-    if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        local billboardGui = player.Character:FindFirstChild(guiName)
-
-        if not billboardGui then
-            billboardGui = Instance.new("BillboardGui")
-            billboardGui.Name = guiName
-            billboardGui.AlwaysOnTop = true
-            billboardGui.Size = UDim2.new(4, 0, 1, 0) -- Larger size for text
-            billboardGui.StudsOffset = offset -- Dynamic offset
-
-            local textLabel = Instance.new("TextLabel")
-            textLabel.Name = textLabelName
-            textLabel.Size = UDim2.new(1, 0, 1, 0)
-            textLabel.BackgroundTransparency = 1
-            textLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- White text
-            textLabel.TextScaled = true
-            textLabel.Font = Enum.Font.SourceSansBold
-            textLabel.Parent = billboardGui
-
-            billboardGui.Parent = player.Character:FindFirstChild("HumanoidRootPart")
-        end
-
-        local textLabel = billboardGui:FindFirstChild(textLabelName)
-        if textLabel then
-            textLabel.Text = text
-        end
-    end
-end
-
--- Function to remove billboards for players
-local function removeBillboard(player, guiName)
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        local billboardGui = player.Character:FindFirstChild(guiName)
-        if billboardGui then
-            billboardGui:Destroy()
-        end
-    end
-end
-
--- Function to create tracers
-local function createTracer(player)
-    if player ~= game.Players.LocalPlayer then
-        local localPlayer = game.Players.LocalPlayer
-        local line = Drawing.new("Line")
-        line.Thickness = 2
-        line.Color = Color3.new(1, 1, 1) -- White color
-        line.Transparency = 1
-
-        local function updateTracer()
-            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local playerPos = player.Character.HumanoidRootPart.Position
-                local localPos = localPlayer.Character.HumanoidRootPart.Position
-                local screenPosPlayer, onScreenPlayer = workspace.CurrentCamera:WorldToViewportPoint(playerPos)
-                local screenPosLocal, onScreenLocal = workspace.CurrentCamera:WorldToViewportPoint(localPos)
-
-                if onScreenPlayer and onScreenLocal then
-                    line.From = Vector2.new(screenPosLocal.X, screenPosLocal.Y)
-                    line.To = Vector2.new(screenPosPlayer.X, screenPosPlayer.Y)
-                    line.Visible = true
-                else
-                    line.Visible = false
-                end
-            else
-                line.Visible = false
-            end
-        end
-
-        game:GetService("RunService").RenderStepped:Connect(updateTracer)
-    end
-end
-
--- Function to remove tracers
-local function removeTracer()
-    for _, obj in pairs(Drawing.GetDrawings()) do
-        if obj.Type == "Line" then
-            obj:Remove()
-        end
-    end
-end
-
--- Box ESP Toggle
-espTab.newToggle("Box ESP", "Shows an outline around players", false, function(toggleState)
-    boxEspEnabled = toggleState
-
-    if boxEspEnabled then
-        for _, player in pairs(game.Players:GetPlayers()) do
-            createOutline(player)
-        end
-
-        game.Players.PlayerAdded:Connect(createOutline)
-    else
-        for _, player in pairs(game.Players:GetPlayers()) do
-            removeOutline(player)
-        end
-    end
+tab.newButton("Change to Hero Hunter", "Changes your character to Hero Hunter", function()
+    local args = {
+        [1] = {
+            ["Goal"] = "Change Character",
+            ["Character"] = "Hunter"
+        }
+    }
+    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
 end)
 
--- Name ESP Toggle
-espTab.newToggle("Name ESP", "Shows the names of players", false, function(toggleState)
-    nameEspEnabled = toggleState
-
-    local function updateNameEsp()
-        for _, player in pairs(game.Players:GetPlayers()) do
-            updateBillboard(player, player.Name, "NameEspBillboard", "NameEspText", Vector3.new(0, 3, 0))
-        end
-    end
-
-    if nameEspEnabled then
-        spawn(function()
-            while nameEspEnabled do
-                updateNameEsp()
-                wait(1)
-            end
-        end)
-    else
-        for _, player in pairs(game.Players:GetPlayers()) do
-            removeBillboard(player, "NameEspBillboard")
-        end
-    end
+tab.newButton("Change to Destructive Cyborg", "Changes your character to Destructive Cyborg", function()
+    local args = {
+        [1] = {
+            ["Goal"] = "Change Character",
+            ["Character"] = "Cyborg"
+        }
+    }
+    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
 end)
 
--- Tracers ESP Toggle
-espTab.newToggle("Tracers ESP", "Draws lines to players", false, function(toggleState)
-    tracersEspEnabled = toggleState
-
-    if tracersEspEnabled then
-        for _, player in pairs(game.Players:GetPlayers()) do
-            createTracer(player)
-        end
-
-        game.Players.PlayerAdded:Connect(createTracer)
-    else
-        removeTracer()
-    end
+tab.newButton("Change to Deadly Ninja", "Changes your character to Deadly Ninja", function()
+    local args = {
+        [1] = {
+            ["Goal"] = "Change Character",
+            ["Character"] = "Ninja"
+        }
+    }
+    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
 end)
 
--- Ultimate ESP Toggle
-espTab.newToggle("Ultimate ESP", "Shows a label above players with certain tools", false, function(toggleState)
-    ultimateEspEnabled = toggleState
+tab.newButton("Change to Brutal Demon", "Changes your character to Brutal Demon", function()
+    local args = {
+        [1] = {
+            ["Goal"] = "Change Character",
+            ["Character"] = "Batter"
+        }
+    }
+    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+end)
 
-    local function updateUltimateEsp()
-        for _, player in pairs(game.Players:GetPlayers()) do
-            if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local hasUltimateTool = false
-                for _, toolName in pairs({"Table Flip", "Serious Punch", "Crushed Rock", "The Final Hunt", "Flamewave Cannon", "Incinerate", "Evil God's Terror", "Chaos Orb", "Entangle"}) do
-                    if player.Backpack:FindFirstChild(toolName) or player.Character:FindFirstChild(toolName) then
-                        hasUltimateTool = true
-                        break
-                    end
-                end
+tab.newButton("Change to Blade Master", "Changes your character to Blade Master", function()
+    local args = {
+        [1] = {
+            ["Goal"] = "Change Character",
+            ["Character"] = "Blade"
+        }
+    }
+    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+end)
 
-                if hasUltimateTool then
-                    updateBillboard(player, "⚠️", "UltimateEspBillboard", "UltimateEspText", Vector3.new(0, 4, 0))
-                else
-                    removeBillboard(player, "UltimateEspBillboard")
-                end
-            end
+tab.newButton("Change to Wild Psychic", "Changes your character to Wild Psychic", function()
+    local args = {
+        [1] = {
+            ["Goal"] = "Change Character",
+            ["Character"] = "Esper"
+        }
+    }
+    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+end)
+
+-- Button for Rejoin
+tab.newButton("Rejoin", "Rejoin the game", function()
+    local ts = game:GetService("TeleportService")
+    local p = game:GetService("Players").LocalPlayer
+    ts:Teleport(game.PlaceId, p)
+end)
+
+-- Button for Serverhop
+tab.newButton("Serverhop", "Hop to another server", function()
+    local ts = game:GetService("TeleportService")
+    local http = game:GetService("HttpService")
+    local servers = {}
+    local function listServers(cursor)
+        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+        if cursor then
+            url = url .. "&cursor=" .. cursor
+        end
+        local response = game:HttpGet(url)
+        return http:JSONDecode(response)
+    end
+    local serverData = listServers()
+    for _, server in ipairs(serverData.data) do
+        if server.playing < server.maxPlayers then
+            table.insert(servers, server.id)
         end
     end
-
-    if ultimateEspEnabled then
-        spawn(function()
-            while ultimateEspEnabled do
-                updateUltimateEsp()
-                wait(1)
-            end
-        end)
+    if #servers > 0 then
+        ts:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)], game.Players.LocalPlayer)
     else
-        for _, player in pairs(game.Players:GetPlayers()) do
-            removeBillboard(player, "UltimateEspBillboard")
-        end
+        warn("No available servers found.")
     end
 end)
