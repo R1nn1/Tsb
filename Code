@@ -1,3 +1,4 @@
+
 local DrRayLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/DrRay-UI-Library/main/DrRay.lua"))()
 
 local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))()
@@ -12,6 +13,230 @@ Notification:Notify(
 local window = DrRayLibrary:Load("Rinns Hub", "Default")
 
 local tab = DrRayLibrary.newTab("Main Tab", "ImageIdHere")
+
+local autoBlockEnabled = false
+local detectionMode = "360"  -- Default detection mode
+local autoBlockRange = 50
+
+tab.newToggle("Auto Block", "Auto Blocks Blockable skills for you", true, function(toggleState)
+    autoBlockEnabled = toggleState
+    if toggleState then
+        print("On")
+    else
+        print("Off")
+    end
+end)
+
+tab.newSlider("Auto Block Range Slider", "Changes the Range of the auto block", 50, false, function(num)
+    autoBlockRange = num
+    print(num)
+end)
+
+tab.newDropdown("Detection Mode", "Select one of these options!", {"360", "Front Facing"}, function(selectedOption)
+    detectionMode = selectedOption
+    print("Detection Mode set to:", selectedOption)
+end)
+
+-- Define the punch animations to detect
+local punchAnimations = {
+    ["10469493270"] = true,
+    ["10469630950"] = true,
+    ["10469639222"] = true,
+    ["10469643643"] = true,
+    ["13532562418"] = true,
+    ["13491635433"] = true,
+    ["13296577783"] = true,
+    ["13295919399"] = true,
+    ["13370310513"] = true,
+    ["13390230973"] = true,
+    ["13378751717"] = true,
+    ["13378708199"] = true,
+    ["14004222985"] = true,
+    ["13997092940"] = true,
+    ["14001963401"] = true,
+    ["14136436157"] = true,
+    ["15259161390"] = true,
+    ["15240216931"] = true,
+    ["15240176873"] = true,
+    ["15162694192"] = true,
+    ["16515503507"] = true,
+    ["16515520431"] = true,
+    ["16515448089"] = true,
+    ["16552234590"] = true,
+    ["17889458563"] = true,
+    ["17889461810"] = true,
+    ["17889471098"] = true,
+    ["17889290569"] = true
+}
+
+-- Define the dash animations to detect
+local dashAnimations = {
+    ["10479335397"] = true,
+    ["13380255751"] = true
+}
+
+-- Define the skill animations to detect with their respective delays
+local skillAnimations = {
+    ["10466974800"] = 1.8,  -- Satima Punches
+    ["12534735382"] = 1.9,
+    ["14046756619"] = 0.5,
+    ["13376962659"] = 1.0,  -- Scatter Sonic
+    ["12296882427"] = 0.4,
+    ["12618292188"] = 0.6,
+    ["12618271998"] = 0.6,
+    ["13376869471"] = 0.5,
+    ["17799224866"] = 0.9,  -- Bullet Barrage
+    ["18179181663"] = 0.6,  -- Headfirst
+    ["16515850153"] = 0.8,  -- Windstorm Fury
+    ["16431491215"] = 0.7   -- Stone Coffin
+}
+
+-- Function to check if a player is within range
+local function isPlayerInRange(player, range)
+    local localPlayer = game:GetService("Players").LocalPlayer
+    local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+    local rootPart = character:WaitForChild("HumanoidRootPart")
+
+    local targetCharacter = player.Character
+    if targetCharacter then
+        local targetRootPart = targetCharacter:FindFirstChild("HumanoidRootPart")
+        if targetRootPart then
+            local distance = (rootPart.Position - targetRootPart.Position).Magnitude
+            return distance <= range
+        end
+    end
+    return false
+end
+
+-- Function to check if a player is within the front-facing range
+local function isPlayerInFrontFacingRange(player, range)
+    local localPlayer = game:GetService("Players").LocalPlayer
+    local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+    local rootPart = character:WaitForChild("HumanoidRootPart")
+
+    local targetCharacter = player.Character
+    if targetCharacter then
+        local targetRootPart = targetCharacter:FindFirstChild("HumanoidRootPart")
+        if targetRootPart then
+            local distance = (rootPart.Position - targetRootPart.Position).Magnitude
+            if distance <= range then
+                local direction = (targetRootPart.Position - rootPart.Position).Unit
+                local lookVector = rootPart.CFrame.LookVector
+                local angle = math.acos(direction:Dot(lookVector))
+                return angle <= math.rad(90)  -- 90 degrees for front-facing detection
+            end
+        end
+    end
+    return false
+end
+
+-- Function to check if the local player is playing any of the specified animations
+local function isLocalPlayerPlayingAnimation()
+    local localPlayer = game:GetService("Players").LocalPlayer
+    local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+    for _, animTrack in pairs(character.Humanoid:GetPlayingAnimationTracks()) do
+        local animId = animTrack.Animation.AnimationId:match("%d+$")
+        if punchAnimations[animId] or dashAnimations[animId] or skillAnimations[animId] then
+            return true
+        end
+    end
+    return false
+end
+
+-- Function to detect animations
+local function detectAnimations()
+    local players = game:GetService("Players")
+
+    for _, player in pairs(players:GetPlayers()) do
+        if player ~= players.LocalPlayer then
+            local inRange = false
+            if detectionMode == "360" then
+                inRange = isPlayerInRange(player, autoBlockRange)
+            elseif detectionMode == "Front Facing" then
+                inRange = isPlayerInFrontFacingRange(player, autoBlockRange)
+            end
+
+            if inRange then
+                local character = player.Character
+                if character then
+                    for _, animTrack in pairs(character.Humanoid:GetPlayingAnimationTracks()) do
+                        local animId = animTrack.Animation.AnimationId:match("%d+$")
+                        if not isLocalPlayerPlayingAnimation() then
+                            if punchAnimations[animId] then
+                                local args = {
+                                    [1] = {
+                                        ["Goal"] = "KeyPress",
+                                        ["Key"] = Enum.KeyCode.F
+                                    }
+                                }
+
+                                game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+
+                                wait(0.45)
+
+                                local args = {
+                                    [1] = {
+                                        ["Goal"] = "KeyRelease",
+                                        ["Key"] = Enum.KeyCode.F
+                                    }
+                                }
+
+                                game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+                            elseif dashAnimations[animId] then
+                                local args = {
+                                    [1] = {
+                                        ["Goal"] = "KeyPress",
+                                        ["Key"] = Enum.KeyCode.F
+                                    }
+                                }
+
+                                game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+
+                                wait(0.90)
+
+                                local args = {
+                                    [1] = {
+                                        ["Goal"] = "KeyRelease",
+                                        ["Key"] = Enum.KeyCode.F
+                                    }
+                                }
+
+                                game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+                            elseif skillAnimations[animId] then
+                                local args = {
+                                    [1] = {
+                                        ["Goal"] = "KeyPress",
+                                        ["Key"] = Enum.KeyCode.F
+                                    }
+                                }
+
+                                game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+
+                                wait(skillAnimations[animId])
+
+                                local args = {
+                                    [1] = {
+                                        ["Goal"] = "KeyRelease",
+                                        ["Key"] = Enum.KeyCode.F
+                                    }
+                                }
+
+                                game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Connect the detection function to RunService
+game:GetService("RunService").Heartbeat:Connect(function()
+    if autoBlockEnabled then
+        detectAnimations()
+    end
+end)
 
 local aimbotEnabled = false
 local aimbotCircleSize = 100
@@ -330,11 +555,14 @@ end)
 
 -- settings
 local settings = {
-    defaultcolor = Color3.fromRGB(255, 0, 0),
+    defaultcolor = Color3.fromRGB(0, 0, 139),  -- Dark Blue
     teamcheck = false,
     teamcolor = true,
     boxESPEnabled = false,
-    tracersEnabled = false
+    tracersEnabled = false,
+    distanceESPEnabled = false,
+    nameESPEnabled = false,
+    rainbowEnabled = false
 };
 
 -- services
@@ -376,6 +604,21 @@ local function createEsp(player)
     drawings.tracer.Visible = false;
     drawings.tracer.ZIndex = 1;
 
+    drawings.name = newDrawing("Text");
+    drawings.name.Text = player.Name;
+    drawings.name.Size = 14;
+    drawings.name.Center = true;
+    drawings.name.Outline = true;
+    drawings.name.Visible = false;
+    drawings.name.Color = settings.defaultcolor;
+
+    drawings.distance = newDrawing("Text");
+    drawings.distance.Size = 14;
+    drawings.distance.Center = true;
+    drawings.distance.Outline = true;
+    drawings.distance.Visible = false;
+    drawings.distance.Color = settings.defaultcolor;
+
     espCache[player] = drawings;
 end
 
@@ -401,38 +644,57 @@ local function updateEsp(player, esp)
             esp.box.Visible = visible and settings.boxESPEnabled;
             esp.boxoutline.Visible = visible and settings.boxESPEnabled;
             esp.tracer.Visible = visible and settings.tracersEnabled;
+            esp.name.Visible = visible and settings.nameESPEnabled;
+            esp.distance.Visible = visible and settings.distanceESPEnabled;
 
             if visible then
-                local min = character:GetModelCFrame().Position - Vector3.new(2, 3, 0);
-                local max = character:GetModelCFrame().Position + Vector3.new(2, 3, 0);
-                local minPos, minVisible = wtvp(min);
-                local maxPos, maxVisible = wtvp(max);
-                if minVisible and maxVisible then
-                    local width = math.abs(minPos.X - maxPos.X);
-                    local height = math.abs(minPos.Y - maxPos.Y);
-                    local x, y = round(minPos.X, minPos.Y);
-
-                    esp.box.Size = newVector2(width, height);
-                    esp.box.Position = newVector2(round(x - width / 2, y - height / 2));
-                    esp.box.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor;
-
-                    esp.boxoutline.Size = esp.box.Size;
-                    esp.boxoutline.Position = esp.box.Position;
-
-                    local localHead = localPlayer.Character and localPlayer.Character:FindFirstChild("Head");
-                    if localHead then
-                        local localHeadPos = wtvp(localHead.Position);
-                        esp.tracer.From = localHeadPos;
-                        esp.tracer.To = headPos;
-                        esp.tracer.Color = esp.box.Color;
+                local minPos, maxPos = Vector3.new(math.huge, math.huge, math.huge), Vector3.new(-math.huge, -math.huge, -math.huge);
+                for _, part in pairs(character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        local partPos = part.Position;
+                        if partPos.X < minPos.X then minPos = Vector3.new(partPos.X, minPos.Y, minPos.Z) end
+                        if partPos.Y < minPos.Y then minPos = Vector3.new(minPos.X, partPos.Y, minPos.Z) end
+                        if partPos.Z < minPos.Z then minPos = Vector3.new(minPos.X, minPos.Y, partPos.Z) end
+                        if partPos.X > maxPos.X then maxPos = Vector3.new(partPos.X, maxPos.Y, maxPos.Z) end
+                        if partPos.Y > maxPos.Y then maxPos = Vector3.new(maxPos.X, partPos.Y, maxPos.Z) end
+                        if partPos.Z > maxPos.Z then maxPos = Vector3.new(maxPos.X, maxPos.Y, partPos.Z) end
                     end
                 end
+                local minScreenPos, _ = wtvp(minPos);
+                local maxScreenPos, _ = wtvp(maxPos);
+                local width, height = maxScreenPos.X - minScreenPos.X, maxScreenPos.Y - minScreenPos.Y;
+                local x, y = round(minScreenPos.X + width / 2, minScreenPos.Y + height / 2);
+
+                esp.box.Size = newVector2(width, height);
+                esp.box.Position = newVector2(round(x - width / 2, y - height / 2));
+                esp.box.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor;
+
+                esp.boxoutline.Size = esp.box.Size;
+                esp.boxoutline.Position = esp.box.Position;
+
+                local localHead = localPlayer.Character and localPlayer.Character:FindFirstChild("Head");
+                if localHead then
+                    local localHeadPos = wtvp(localHead.Position);
+                    esp.tracer.From = localHeadPos;
+                    esp.tracer.To = headPos;
+                    esp.tracer.Color = esp.box.Color;
+                end
+
+                esp.name.Position = newVector2(x, y - height / 2 - 16);
+                esp.name.Color = esp.box.Color;
+
+                local distance = (localPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude;
+                esp.distance.Text = string.format("%.0f", distance) .. "m";
+                esp.distance.Position = newVector2(x, y + height / 2 + 16);
+                esp.distance.Color = esp.box.Color;
             end
         end
     else
         esp.box.Visible = false;
         esp.boxoutline.Visible = false;
         esp.tracer.Visible = false;
+        esp.name.Visible = false;
+        esp.distance.Visible = false;
     end
 end
 
@@ -464,8 +726,13 @@ runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
 
         if drawings and player ~= localPlayer then
             updateEsp(player, drawings);
-            drawings.box.Color = rainbowColorTransition();
-            drawings.tracer.Color = drawings.box.Color;
+            if settings.rainbowEnabled then
+                local rainbowColor = rainbowColorTransition();
+                drawings.box.Color = rainbowColor;
+                drawings.tracer.Color = rainbowColor;
+                drawings.name.Color = rainbowColor;
+                drawings.distance.Color = rainbowColor;
+            end
         end
     end
 end)
@@ -479,6 +746,18 @@ end)
 
 tab.newToggle("Tracers Esp", "Draws a line to every player", true, function(toggleState)
     settings.tracersEnabled = toggleState
+end)
+
+tab.newToggle("Distance Esp", "Displays the distance to every player", true, function(toggleState)
+    settings.distanceESPEnabled = toggleState
+end)
+
+tab.newToggle("Name Esp", "Displays the name of every player", true, function(toggleState)
+    settings.nameESPEnabled = toggleState
+end)
+
+tab.newToggle("Rainbow Esp", "Enables rainbow color transition for ESP", false, function(toggleState)
+    settings.rainbowEnabled = toggleState
 end)
 
 local tab = DrRayLibrary.newTab("Misc Tab", "ImageIdHere")
