@@ -14,6 +14,265 @@ local window = DrRayLibrary:Load("Rinns Hub", "Default")
 
 local tab = DrRayLibrary.newTab("Main Tab", "ImageIdHere")
 
+local animationsToAvoid = {
+    ["rbxassetid://10468665991"] = true,
+    ["rbxassetid://10466974800"] = true,
+    ["rbxassetid://10471336737"] = true,
+    ["rbxassetid://12510170988"] = true,
+    ["rbxassetid://12272894215"] = true,
+    ["rbxassetid://12296882427"] = true,
+    ["rbxassetid://12307656616"] = true,
+    ["rbxassetid://12351854556"] = true,
+    ["rbxassetid://12534735382"] = true,
+    ["rbxassetid://12502664044"] = true,
+    ["rbxassetid://12509505723"] = true,
+    ["rbxassetid://12618292188"] = true,
+    ["rbxassetid://12684185971"] = true,
+    ["rbxassetid://13376869471"] = true,
+    ["rbxassetid://13294790250"] = true,
+    ["rbxassetid://13376962659"] = true,
+    ["rbxassetid://13501296372"] = true,
+    ["rbxassetid://14004235777"] = true,
+    ["rbxassetid://14003607057"] = true,
+    ["rbxassetid://14046756619"] = true,
+    ["rbxassetid://14048349132"] = true,
+    ["rbxassetid://14299135500"] = true,
+    ["rbxassetid://14967219354"] = true,
+    ["rbxassetid://14357997687"] = true,
+    ["rbxassetid://14357943487"] = true,
+    ["rbxassetid://15290930205"] = true,
+    ["rbxassetid://15145462680"] = true,
+    ["rbxassetid://15295895753"] = true,
+    ["rbxassetid://15311685628"] = true,
+    ["rbxassetid://16139108718"] = true,
+    ["rbxassetid://16139402582"] = true,
+    ["rbxassetid://16515850153"] = true,
+    ["rbxassetid://16431491215"] = true,
+    ["rbxassetid://16597322398"] = true,
+    ["rbxassetid://10469493270"] = "special"
+}
+
+local skills = {
+    firstskill = {"Normal Punch", "Flowing Water", "Machine Gun Blows", "Flash Strike", "Homerun", "Quick Slice", "Bullet Barrage", "Crushing Pull"},
+    secondskill = {"Atmos Cleave", "Windstorm Fury", "Ignition Burst", "Whirlwind Kick", "Beatdown", "Consecutive Punches", "Lethal Whirlwind Stream", "Vanishing Kick"},
+    thirdskill = {"Shove", "Hunter's Grasp", "Blitz Shot", "Scatter", "Grand Slam", "Pinpoint Cut", "Stone Coffin", "Whirlwind Drop"},
+    fourthskill = {"Split Second Counter", "Expulsive Push", "Jet Dive", "Explosive Shuriken", "Foul Ball", "Uppercut", "Head First", "Prey's Peril"}
+}
+
+local skillCooldowns = {
+    ["Normal Punch"] = 21,
+    ["Flowing Water"] = 19,
+    ["Machine Gun Blows"] = 17,
+    ["Flash Strike"] = 18.5,
+    ["Homerun"] = 18.6,
+    ["Quick Slice"] = 21.5,
+    ["Bullet Barrage"] = 22,
+    ["Crushing Pull"] = 23,
+    ["Consecutive Punches"] = 19,
+    ["Lethal Whirlwind Stream"] = 22,
+    ["Ignition Burst"] = 18.3,
+    ["Whirlwind Kick"] = 21.5,
+    ["Beatdown"] = 24.3,
+    ["Atmos Cleave"] = 23.2,
+    ["Windstorm Fury"] = 21,
+    ["Vanishing Kick"] = 21,
+    ["Shove"] = 11,
+    ["Hunter's Grasp"] = 17.8,
+    ["Blitz Shot"] = 26,
+    ["Scatter"] = 22.3,
+    ["Grand Slam"] = 21.7,
+    ["Pinpoint Cut"] = 18,
+    ["Stone Coffin"] = 25.7,
+    ["Whirlwind Drop"] = 15.7,
+    ["Jet Dive"] = 19.5,
+    ["Explosive Shuriken"] = 18.5,
+    ["Foul Ball"] = 24.8,
+    ["Split Second Counter"] = 18.7,
+    ["Expulsive Push"] = 20.7,
+    ["Prey's Peril"] = 18.5,
+    ["Head First"] = 22,
+    ["Uppercut"] = 21
+}
+
+local skillUsage = {
+    firstskill = 0,
+    secondskill = 0,
+    thirdskill = 0,
+    fourthskill = 0
+}
+
+local function isAnimationPlaying(character)
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+            if animationsToAvoid[track.Animation.AnimationId] then
+                return animationsToAvoid[track.Animation.AnimationId]
+            end
+        end
+    end
+    return false
+end
+
+local function teleportBehindTarget(player, targetPlayer, distance)
+    local targetCharacter = targetPlayer.Character
+    if targetCharacter then
+        local targetHRP = targetCharacter:FindFirstChild("HumanoidRootPart")
+        local playerHRP = player.Character:FindFirstChild("HumanoidRootPart")
+        if targetHRP and playerHRP then
+            local backOffset = targetHRP.CFrame.lookVector * -distance
+            playerHRP.CFrame = CFrame.new(targetHRP.Position + backOffset, targetHRP.Position)
+        end
+    end
+end
+
+local function equipAndUseSkill(player, skillType)
+    local character = player.Character
+    if character then
+        local backpack = player.Backpack
+        local liveFolder = workspace:FindFirstChild("Live")
+        if backpack and liveFolder then
+            for _, skill in pairs(skills[skillType]) do
+                local tool = backpack:FindFirstChild(skill) or character:FindFirstChild(skill)
+                if tool then
+                    character.Humanoid:EquipTool(tool)
+                    
+                    -- Execute left click and left click release actions
+                    local args = {
+                        [1] = {
+                            ["Mobile"] = true,
+                            ["Goal"] = "LeftClick"
+                        }
+                    }
+                    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+
+                    wait(0.02)
+
+                    local argsRelease = {
+                        [1] = {
+                            ["Goal"] = "LeftClickRelease",
+                            ["Mobile"] = true
+                        }
+                    }
+                    game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(argsRelease))
+
+                    -- Unequip tool
+                    character.Humanoid:UnequipTools()
+
+                    -- Wait for cooldown if defined
+                    if skillCooldowns[skill] then
+                        skillUsage[skillType] = tick()
+                        wait(skillCooldowns[skill])
+                    end
+                end
+            end
+        end
+    end
+end
+
+local autoFarmThread
+local useFirstSkill = false
+local useSecondSkill = false
+local useThirdSkill = false
+local useFourthSkill = false
+
+local function autoFarm()
+    local player = game:GetService("Players").LocalPlayer
+    local targetPlayer
+
+    while true do
+        wait(0.02)  -- Adjust the wait time as necessary
+
+        if not targetPlayer or not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("HumanoidRootPart") or targetPlayer.Character:FindFirstChildOfClass("Humanoid").Health <= 0 then
+            local players = game:GetService("Players"):GetPlayers()
+            repeat
+                targetPlayer = players[math.random(1, #players)]
+            until targetPlayer ~= player and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+        end
+
+        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+            repeat wait() until player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        end
+
+        local function handleAvoidAnimation()
+            local endTime = tick() + 1
+            while tick() < endTime do
+                teleportBehindTarget(player, targetPlayer, 13)
+                wait(0.02)
+            end
+        end
+
+        if isAnimationPlaying(targetPlayer.Character) then
+            handleAvoidAnimation()
+        else
+            teleportBehindTarget(player, targetPlayer, 3)
+
+            local args = {
+                [1] = {
+                    ["Goal"] = "LeftClick",
+                    ["Mobile"] = true
+                }
+            }
+            game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+
+            local argsRelease = {
+                [1] = {
+                    ["Goal"] = "LeftClickRelease",
+                    ["Mobile"] = true
+                }
+            }
+            game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(argsRelease))
+
+            local currentTime = tick()
+
+            -- Use skills concurrently without stopping the teleportation
+            if useFirstSkill and (currentTime - skillUsage["firstskill"] >= skillCooldowns[skills.firstskill[1]]) then
+                coroutine.wrap(equipAndUseSkill)(player, "firstskill")
+                skillUsage["firstskill"] = currentTime
+            end
+            if useSecondSkill and (currentTime - skillUsage["secondskill"] >= skillCooldowns[skills.secondskill[1]]) then
+                coroutine.wrap(equipAndUseSkill)(player, "secondskill")
+                skillUsage["secondskill"] = currentTime
+            end
+            if useThirdSkill and (currentTime - skillUsage["thirdskill"] >= skillCooldowns[skills.thirdskill[1]]) then
+                coroutine.wrap(equipAndUseSkill)(player, "thirdskill")
+                skillUsage["thirdskill"] = currentTime
+            end
+            if useFourthSkill and (currentTime - skillUsage["fourthskill"] >= skillCooldowns[skills.fourthskill[1]]) then
+                coroutine.wrap(equipAndUseSkill)(player, "fourthskill")
+                skillUsage["fourthskill"] = currentTime
+            end
+        end
+    end
+end
+
+tab.newToggle("Auto Farm", "Auto Farms kills for you", true, function(toggleState)
+    if toggleState then
+        autoFarmThread = coroutine.create(autoFarm)
+        coroutine.resume(autoFarmThread)
+    else
+        if autoFarmThread then
+            coroutine.close(autoFarmThread)
+            autoFarmThread = nil
+        end
+    end
+end)
+
+tab.newToggle("Uses first skill", "Uses your first skill with the Auto Farm", true, function(toggleState)
+    useFirstSkill = toggleState
+end)
+
+tab.newToggle("Use second skill", "Uses your second skill while auto farming", true, function(toggleState)
+    useSecondSkill = toggleState
+end)
+
+tab.newToggle("Use third skill", "Uses your third skill while auto farming", true, function(toggleState)
+    useThirdSkill = toggleState
+end)
+
+tab.newToggle("Use fourth skill", "Uses your fourth skill while auto farming", true, function(toggleState)
+    useFourthSkill = toggleState
+end)
+
 local autoBlockEnabled = false
 local detectionMode = "360"  -- Default detection mode
 local autoBlockRange = 50
@@ -562,7 +821,8 @@ local settings = {
     tracersEnabled = false,
     distanceESPEnabled = false,
     nameESPEnabled = false,
-    rainbowEnabled = false
+    boxWidth = 4,  -- Width of the box ESP
+    boxHeight = 6  -- Height of the box ESP
 };
 
 -- services
@@ -575,28 +835,26 @@ local camera = workspace.CurrentCamera;
 
 -- functions
 local newVector2, newColor3, newDrawing = Vector2.new, Color3.new, Drawing.new;
-local tan, rad = math.tan, math.rad;
 local round = function(...) local a = {}; for i, v in next, table.pack(...) do a[i] = math.round(v); end return unpack(a); end;
-local wtvp = function(...) local a, b = camera.WorldToViewportPoint(camera, ...) return newVector2(a.X, a.Y), b, a.Z end;
+local wtvp = function(...) local a, b = camera:WorldToViewportPoint(...) return newVector2(a.X, a.Y), b, a.Z end;
 
 local espCache = {};
 
 local function createEsp(player)
     local drawings = {};
 
-    drawings.box = newDrawing("Square");
-    drawings.box.Thickness = 1;
-    drawings.box.Filled = false;
-    drawings.box.Color = settings.defaultcolor;
-    drawings.box.Visible = false;
-    drawings.box.ZIndex = 2;
-
-    drawings.boxoutline = newDrawing("Square");
-    drawings.boxoutline.Thickness = 2; -- Making the outline thinner
-    drawings.boxoutline.Filled = false;
-    drawings.boxoutline.Color = newColor3();
-    drawings.boxoutline.Visible = false;
-    drawings.boxoutline.ZIndex = 1;
+    -- Box ESP
+    drawings.boxTop = newDrawing("Line");
+    drawings.boxBottom = newDrawing("Line");
+    drawings.boxLeft = newDrawing("Line");
+    drawings.boxRight = newDrawing("Line");
+    
+    for _, boxPart in ipairs({drawings.boxTop, drawings.boxBottom, drawings.boxLeft, drawings.boxRight}) do
+        boxPart.Thickness = 1;
+        boxPart.Color = settings.defaultcolor;
+        boxPart.Visible = false;
+        boxPart.ZIndex = 2;
+    end
 
     drawings.tracer = newDrawing("Line");
     drawings.tracer.Thickness = 1;
@@ -634,73 +892,69 @@ end
 local function updateEsp(player, esp)
     local character = player and player.Character;
     if character then
-        local head = character:FindFirstChild("Head");
-        local rootPart = character:FindFirstChild("HumanoidRootPart");
-        if head and rootPart then
-            local headPos, headVisible = wtvp(head.Position);
-            local rootPos, rootVisible = wtvp(rootPart.Position);
-            local visible = headVisible and rootVisible;
-            
-            esp.box.Visible = visible and settings.boxESPEnabled;
-            esp.boxoutline.Visible = visible and settings.boxESPEnabled;
-            esp.tracer.Visible = visible and settings.tracersEnabled;
-            esp.name.Visible = visible and settings.nameESPEnabled;
-            esp.distance.Visible = visible and settings.distanceESPEnabled;
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart");
+        if humanoidRootPart then
+            local rootPos, rootVisible = wtvp(humanoidRootPart.Position);
+            local visible = rootVisible;
+
+            local color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor;
+            for _, boxPart in ipairs({esp.boxTop, esp.boxBottom, esp.boxLeft, esp.boxRight}) do
+                boxPart.Color = color;
+            end
+            esp.tracer.Color = color;
+            esp.name.Color = color;
+            esp.distance.Color = color;
+
+            for _, boxPart in ipairs({esp.boxTop, esp.boxBottom, esp.boxLeft, esp.boxRight}) do
+                boxPart.Visible = visible and settings.boxESPEnabled;
+            end
+            esp.tracer.Visible = settings.tracersEnabled and visible;
+            esp.name.Visible = settings.nameESPEnabled and visible;
+            esp.distance.Visible = settings.distanceESPEnabled and visible;
 
             if visible then
-                local minPos, maxPos = Vector3.new(math.huge, math.huge, math.huge), Vector3.new(-math.huge, -math.huge, -math.huge);
-                for _, part in pairs(character:GetChildren()) do
-                    if part:IsA("BasePart") then
-                        local partPos = part.Position;
-                        if partPos.X < minPos.X then minPos = Vector3.new(partPos.X, minPos.Y, minPos.Z) end
-                        if partPos.Y < minPos.Y then minPos = Vector3.new(minPos.X, partPos.Y, minPos.Z) end
-                        if partPos.Z < minPos.Z then minPos = Vector3.new(minPos.X, minPos.Y, partPos.Z) end
-                        if partPos.X > maxPos.X then maxPos = Vector3.new(partPos.X, maxPos.Y, maxPos.Z) end
-                        if partPos.Y > maxPos.Y then maxPos = Vector3.new(maxPos.X, partPos.Y, maxPos.Z) end
-                        if partPos.Z > maxPos.Z then maxPos = Vector3.new(maxPos.X, maxPos.Y, partPos.Z) end
-                    end
-                end
-                local minScreenPos, _ = wtvp(minPos);
-                local maxScreenPos, _ = wtvp(maxPos);
-                local width, height = maxScreenPos.X - minScreenPos.X, maxScreenPos.Y - minScreenPos.Y;
-                local x, y = round(minScreenPos.X + width / 2, minScreenPos.Y + height / 2);
+                local boxWidth = settings.boxWidth * 10;
+                local boxHeight = settings.boxHeight * 10;
+                local x, y = round(rootPos.X, rootPos.Y);
 
-                esp.box.Size = newVector2(width, height);
-                esp.box.Position = newVector2(round(x - width / 2, y - height / 2));
-                esp.box.Color = settings.teamcolor and player.TeamColor.Color or settings.defaultcolor;
+                -- Box ESP
+                esp.boxTop.From = newVector2(x - boxWidth / 2, y - boxHeight / 2);
+                esp.boxTop.To = newVector2(x + boxWidth / 2, y - boxHeight / 2);
 
-                esp.boxoutline.Size = esp.box.Size;
-                esp.boxoutline.Position = esp.box.Position;
+                esp.boxBottom.From = newVector2(x - boxWidth / 2, y + boxHeight / 2);
+                esp.boxBottom.To = newVector2(x + boxWidth / 2, y + boxHeight / 2);
 
+                esp.boxLeft.From = newVector2(x - boxWidth / 2, y - boxHeight / 2);
+                esp.boxLeft.To = newVector2(x - boxWidth / 2, y + boxHeight / 2);
+
+                esp.boxRight.From = newVector2(x + boxWidth / 2, y - boxHeight / 2);
+                esp.boxRight.To = newVector2(x + boxWidth / 2, y + boxHeight / 2);
+
+                -- Tracer ESP
                 local localHead = localPlayer.Character and localPlayer.Character:FindFirstChild("Head");
                 if localHead then
                     local localHeadPos = wtvp(localHead.Position);
                     esp.tracer.From = localHeadPos;
-                    esp.tracer.To = headPos;
-                    esp.tracer.Color = esp.box.Color;
+                    esp.tracer.To = rootPos;
                 end
 
-                esp.name.Position = newVector2(x, y - height / 2 - 16);
-                esp.name.Color = esp.box.Color;
+                -- Name ESP
+                esp.name.Position = newVector2(x, y - boxHeight / 2 - 16);
 
-                local distance = (localPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude;
+                -- Distance ESP
+                local distance = (localPlayer.Character.HumanoidRootPart.Position - character.HumanoidRootPart.Position).Magnitude;
                 esp.distance.Text = string.format("%.0f", distance) .. "m";
-                esp.distance.Position = newVector2(x, y + height / 2 + 16);
-                esp.distance.Color = esp.box.Color;
+                esp.distance.Position = newVector2(x, y + boxHeight / 2 + 16);
             end
         end
     else
-        esp.box.Visible = false;
-        esp.boxoutline.Visible = false;
+        for _, boxPart in ipairs({esp.boxTop, esp.boxBottom, esp.boxLeft, esp.boxRight}) do
+            boxPart.Visible = false;
+        end
         esp.tracer.Visible = false;
         esp.name.Visible = false;
         esp.distance.Visible = false;
     end
-end
-
-local function rainbowColorTransition()
-    local t = tick() * 0.1
-    return Color3.fromHSV(t % 1, 1, 1)
 end
 
 -- main
@@ -726,13 +980,6 @@ runService:BindToRenderStep("esp", Enum.RenderPriority.Camera.Value, function()
 
         if drawings and player ~= localPlayer then
             updateEsp(player, drawings);
-            if settings.rainbowEnabled then
-                local rainbowColor = rainbowColorTransition();
-                drawings.box.Color = rainbowColor;
-                drawings.tracer.Color = rainbowColor;
-                drawings.name.Color = rainbowColor;
-                drawings.distance.Color = rainbowColor;
-            end
         end
     end
 end)
@@ -741,23 +988,19 @@ end)
 local tab = DrRayLibrary.newTab("Esp Tab", "ImageIdHere")
 
 tab.newToggle("Box Esp", "Draws a box around every player", true, function(toggleState)
-    settings.boxESPEnabled = toggleState
+    settings.boxESPEnabled = toggleState;
 end)
 
 tab.newToggle("Tracers Esp", "Draws a line to every player", true, function(toggleState)
-    settings.tracersEnabled = toggleState
+    settings.tracersEnabled = toggleState;
 end)
 
 tab.newToggle("Distance Esp", "Displays the distance to every player", true, function(toggleState)
-    settings.distanceESPEnabled = toggleState
+    settings.distanceESPEnabled = toggleState;
 end)
 
 tab.newToggle("Name Esp", "Displays the name of every player", true, function(toggleState)
-    settings.nameESPEnabled = toggleState
-end)
-
-tab.newToggle("Rainbow Esp", "Enables rainbow color transition for ESP", false, function(toggleState)
-    settings.rainbowEnabled = toggleState
+    settings.nameESPEnabled = toggleState;
 end)
 
 local tab = DrRayLibrary.newTab("Misc Tab", "ImageIdHere")
