@@ -79,7 +79,8 @@ local animationIDs = {
     ["rbxassetid://17889471098"] = true,
     ["rbxassetid://17889290569"] = true,
     ["rbxassetid://10479335397"] = true,
-    ["rbxassetid://13380255751"] = true
+    ["rbxassetid://13380255751"] = true,
+    ["rbxassetid://13362587853"] = true
 }
 
 local player = game.Players.LocalPlayer
@@ -87,6 +88,7 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
 local detectionRange = 15
+local detectionMode = "360" -- Default to 360 detection
 
 local function getNearbyPlayers(radius)
     local players = {}
@@ -104,17 +106,29 @@ local function getNearbyPlayers(radius)
     return players
 end
 
+local function isInFront(character, target)
+    local lookVector = character.CFrame.lookVector
+    local directionToTarget = (target.Position - character.Position).unit
+    return lookVector:Dot(directionToTarget) > 0.5 -- Adjust the threshold as necessary
+end
+
 local function checkAnimations()
     local nearbyPlayers = getNearbyPlayers(detectionRange)
     for _, otherPlayer in pairs(nearbyPlayers) do
         local otherCharacter = otherPlayer.Character
         if otherCharacter then
-            for _, animTrack in pairs(otherCharacter:FindFirstChildOfClass("Humanoid"):GetPlayingAnimationTracks()) do
-                if animationIDs[animTrack.Animation.AnimationId] then
-                    -- Teleport the player to a random position 18 studs away
-                    local newPosition = humanoidRootPart.Position + Vector3.new(math.random(-18, 18), 0, math.random(-18, 18))
-                    humanoidRootPart.CFrame = CFrame.new(newPosition)
-                    return
+            local otherHumanoidRootPart = otherCharacter:FindFirstChild("HumanoidRootPart")
+            if otherHumanoidRootPart then
+                if (detectionMode == "360" or isInFront(humanoidRootPart, otherHumanoidRootPart)) then
+                    for _, animTrack in pairs(otherCharacter:FindFirstChildOfClass("Humanoid"):GetPlayingAnimationTracks()) do
+                        if animationIDs[animTrack.Animation.AnimationId] then
+                            -- Teleport the player to a random position 18 studs away, favoring behind the other player
+                            local behindOffset = (otherHumanoidRootPart.CFrame.lookVector * -18) + Vector3.new(math.random(-9, 9), 0, math.random(-9, 9))
+                            local newPosition = otherHumanoidRootPart.Position + behindOffset
+                            humanoidRootPart.CFrame = CFrame.new(newPosition)
+                            return
+                        end
+                    end
                 end
             end
         end
@@ -149,6 +163,11 @@ end)
 tab.newSlider("Ultra Instinct Range Slider", "changes the range of the Ultra Instinct", 75, false, function(num)
     detectionRange = num
     print("Detection Range: " .. num)
+end)
+
+tab.newDropdown("Ultra Instinct Detection Type", "Choose the detection type", {"Front Facing", "360"}, function(selectedOption)
+    detectionMode = selectedOption
+    print("Detection Mode: " .. selectedOption)
 end)
 
 local animationsToAvoid = {
