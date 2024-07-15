@@ -1143,6 +1143,202 @@ end)
 -- GUI integration
 local tab = DrRayLibrary.newTab("Esp Tab", "ImageIdHere")
 
+
+local staffIds = {
+    [1446694201] = true,
+    [994994173] = true,
+    [1041867508] = true,
+    [1001242712] = true,
+    [77525605] = true,
+    [1059541187] = true,
+    [3162123826] = true,
+    [31070091] = true
+}
+
+local function notifyStaffJoin(staffName)
+    local gui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
+    local frame = Instance.new("Frame", gui)
+    frame.Size = UDim2.new(0, 200, 0, 150)
+    frame.Position = UDim2.new(0, 10, 1, -160)
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    frame.ClipsDescendants = true
+
+    local uiCorner = Instance.new("UICorner", frame)
+
+    local titleLabel = Instance.new("TextLabel", frame)
+    titleLabel.Size = UDim2.new(1, 0, 0.2, 0)
+    titleLabel.Text = "A Mod/Dev is in your game"
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.BackgroundTransparency = 1
+
+    local descriptionLabel = Instance.new("TextLabel", frame)
+    descriptionLabel.Size = UDim2.new(1, 0, 0.4, 0)
+    descriptionLabel.Position = UDim2.new(0, 0, 0.2, 0)
+    descriptionLabel.Text = staffName .. " is in your game"
+    descriptionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    descriptionLabel.BackgroundTransparency = 1
+
+    local button = Instance.new("TextButton", frame)
+    button.Size = UDim2.new(1, 0, 0.2, 0)
+    button.Position = UDim2.new(0, 0, 0.6, 0)
+    button.Text = "Would you like to Server Hop?"
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+
+    local closeButton = Instance.new("TextButton", frame)
+    closeButton.Size = UDim2.new(1, 0, 0.2, 0)
+    closeButton.Position = UDim2.new(0, 0, 0.8, 0)
+    closeButton.Text = "Close"
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+
+    local progressBar = Instance.new("Frame", frame)
+    progressBar.Size = UDim2.new(1, 0, 0.05, 0)
+    progressBar.Position = UDim2.new(0, 0, 0.75, 0)
+    progressBar.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+
+    button.MouseButton1Click:Connect(function()
+        game:GetService("TeleportService"):Teleport(game.PlaceId)
+    end)
+
+    closeButton.MouseButton1Click:Connect(function()
+        gui:Destroy()
+    end)
+
+    spawn(function()
+        for i = 1, 100 do
+            progressBar.Size = UDim2.new(1 - i / 100, 0, 0.05, 0)
+            wait(0.08)
+        end
+        gui:Destroy()
+    end)
+end
+
+local function checkForStaff()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if staffIds[player.UserId] then
+            notifyStaffJoin(player.Name)
+        end
+    end
+end
+
+local ultimateTools = {
+    "Table Flip", "Serious Punch", "The Final Hunt", "Rock Splitting Fist", "Thunder Kick",
+    "Speedblitz Dropkick", "Flamewave Cannon", "Fourfold Flashstrike", "Carnage", "Straight On",
+    "Brutal Beatdown", "Strength Difference", "Death Blow", "Solar Cleave", "Sunrise", "Atomic Slash",
+    "Sunset", "Psychic Ricochet", "Cosmic Strike", "Terrible Tornado"
+}
+
+local function checkUltimateTools()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        local character = game.Workspace.Live:FindFirstChild(player.Name)
+        if character then
+            local hasUltimateTool = false
+            for _, toolName in pairs(ultimateTools) do
+                if player.Backpack:FindFirstChild(toolName) or character:FindFirstChild(toolName) then
+                    hasUltimateTool = true
+                    break
+                end
+            end
+
+            if hasUltimateTool then
+                if not character:FindFirstChild("UltimateWarning") then
+                    local warning = Instance.new("BillboardGui", character)
+                    warning.Name = "UltimateWarning"
+                    warning.Size = UDim2.new(0, 50, 0, 50)
+                    warning.StudsOffset = Vector3.new(0, 2, 0)
+                    warning.Adornee = character:FindFirstChild("Head")
+                    local label = Instance.new("TextLabel", warning)
+                    label.Size = UDim2.new(1, 0, 1, 0)
+                    label.BackgroundTransparency = 1
+                    label.Text = "⚠️"
+                    label.TextColor3 = Color3.fromRGB(255, 0, 0)
+                    label.TextScaled = true
+                end
+            else
+                if character:FindFirstChild("UltimateWarning") then
+                    character.UltimateWarning:Destroy()
+                end
+            end
+        end
+    end
+end
+
+local function checkDeathCounter()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        local character = game.Workspace.Live:FindFirstChild(player.Name)
+        if character then
+            local hasDeathCounter = character:FindFirstChild("Counter") ~= nil
+            if hasDeathCounter then
+                if not character:FindFirstChild("DeathCounterWarning") then
+                    local warning = Instance.new("BillboardGui", character)
+                    warning.Name = "DeathCounterWarning"
+                    warning.Size = UDim2.new(0, 50, 0, 50)
+                    warning.StudsOffset = Vector3.new(0, 2, 0)
+                    warning.Adornee = character:FindFirstChild("Head")
+                    local label = Instance.new("TextLabel", warning)
+                    label.Size = UDim2.new(1, 0, 1, 0)
+                    label.BackgroundTransparency = 1
+                    label.Text = "💀"
+                    label.TextColor3 = Color3.fromRGB(255, 0, 0)
+                    label.TextScaled = true
+                end
+            else
+                if character:FindFirstChild("DeathCounterWarning") then
+                    character.DeathCounterWarning:Destroy()
+                end
+            end
+        end
+    end
+end
+
+tab.newToggle("Notify When Staff Joins", "Sends A Notification When A Staff Member Joins Your Server", true, function(toggleState)
+    if toggleState then
+        game.Players.PlayerAdded:Connect(function(player)
+            if staffIds[player.UserId] then
+                notifyStaffJoin(player.Name)
+            end
+        end)
+        checkForStaff()
+    end
+end)
+
+tab.newButton("Test Staff Notify", "Click this to test the Staff Notifying system", function()
+    notifyStaffJoin("Test Staff")
+end)
+
+tab.newToggle("Ultimate Esp", "Shows A Warning Sign Above Those Who Are In Ultimate", true, function(toggleState)
+    if toggleState then
+        while toggleState do
+            checkUltimateTools()
+            wait(1)
+        end
+    else
+        for _, player in pairs(game.Players:GetPlayers()) do
+            local character = game.Workspace.Live:FindFirstChild(player.Name)
+            if character and character:FindFirstChild("UltimateWarning") then
+                character.UltimateWarning:Destroy()
+            end
+        end
+    end
+end)
+
+tab.newToggle("Death Counter Esp", "Puts A Skull above those who have Death Counter On", true, function(toggleState)
+    if toggleState then
+        while toggleState do
+            checkDeathCounter()
+            wait(1)
+        end
+    else
+        for _, player in pairs(game.Players:GetPlayers()) do
+            local character = game.Workspace.Live:FindFirstChild(player.Name)
+            if character and character:FindFirstChild("DeathCounterWarning") then
+                character.DeathCounterWarning:Destroy()
+            end
+        end
+    end
+end)
+
 tab.newToggle("Box Esp", "Draws a box around every player", true, function(toggleState)
     settings.boxESPEnabled = toggleState;
 end)
