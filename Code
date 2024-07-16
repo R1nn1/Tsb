@@ -1,14 +1,4 @@
-
 local DrRayLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/DrRay-UI-Library/main/DrRay.lua"))()
-
-local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))()
-local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))()
-
-Notification:Notify(
-    {Title = "IMPORTANT", Description = "If any of the toggles are already green turn it off then turn it on for the feature to work black = off green = on"},
-    {OutlineColor = Color3.fromRGB(80, 80, 80), Time = 8, Type = "option"},
-    {Image = "http://www.roblox.com/asset/?id=6023426923", ImageColor = Color3.fromRGB(255, 84, 84), Callback = function(State) print(tostring(State)) end}
-)
 
 local window = DrRayLibrary:Load("Rinns Hub", "Default")
 
@@ -80,7 +70,13 @@ local animationIDs = {
     ["rbxassetid://17889290569"] = true,
     ["rbxassetid://10479335397"] = true,
     ["rbxassetid://13380255751"] = true,
-    ["rbxassetid://13362587853"] = true
+    ["rbxassetid://13362587853"] = true,
+    ["rbxassetid://11365563255"] = {range = 175, behind = 17},
+    ["rbxassetid://12983333733"] = {range = 200, behind = 16},
+    ["rbxassetid://13927612951"] = {range = 100, behind = 16},
+    ["rbxassetid://13146710762"] = {range = 200, behind = 24},
+    ["rbxassetid://15520132233"] = {range = 100, behind = 75},
+    ["rbxassetid://16082123712"] = {range = 40, behind = 20}
 }
 
 local player = game.Players.LocalPlayer
@@ -89,6 +85,7 @@ local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
 local detectionRange = 15
 local detectionMode = "360" -- Default to 360 detection
+local lastTeleportTime = 0
 
 local function getNearbyPlayers(radius)
     local players = {}
@@ -113,6 +110,11 @@ local function isInFront(character, target)
 end
 
 local function checkAnimations()
+    local currentTime = tick()
+    if currentTime - lastTeleportTime < 0.1 then
+        return
+    end
+    
     local nearbyPlayers = getNearbyPlayers(detectionRange)
     for _, otherPlayer in pairs(nearbyPlayers) do
         local otherCharacter = otherPlayer.Character
@@ -121,11 +123,13 @@ local function checkAnimations()
             if otherHumanoidRootPart then
                 if (detectionMode == "360" or isInFront(humanoidRootPart, otherHumanoidRootPart)) then
                     for _, animTrack in pairs(otherCharacter:FindFirstChildOfClass("Humanoid"):GetPlayingAnimationTracks()) do
-                        if animationIDs[animTrack.Animation.AnimationId] then
-                            -- Teleport the player to a random position 18 studs away, favoring behind the other player
-                            local behindOffset = (otherHumanoidRootPart.CFrame.lookVector * -18) + Vector3.new(math.random(-9, 9), 0, math.random(-9, 9))
-                            local newPosition = otherHumanoidRootPart.Position + behindOffset
+                        local animId = animTrack.Animation.AnimationId
+                        local data = animationIDs[animId]
+                        if data then
+                            local teleportDistance = (type(data) == "table" and data.behind) or 18 -- default behind distance
+                            local newPosition = otherHumanoidRootPart.Position - otherHumanoidRootPart.CFrame.lookVector * teleportDistance + Vector3.new(math.random(-1, 1), 0, math.random(-1, 1))
                             humanoidRootPart.CFrame = CFrame.new(newPosition)
+                            lastTeleportTime = currentTime
                             return
                         end
                     end
@@ -149,6 +153,16 @@ local function ultraInstinctLoop()
         end
     end)
 end
+
+local function onCharacterAdded(newCharacter)
+    character = newCharacter
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    if ultraInstinctActive then
+        ultraInstinctLoop()
+    end
+end
+
+player.CharacterAdded:Connect(onCharacterAdded)
 
 tab.newToggle("Ultra Instinct", "Makes you almost unhitable", true, function(toggleState)
     ultraInstinctActive = toggleState
