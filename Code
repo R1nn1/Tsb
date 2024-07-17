@@ -443,16 +443,18 @@ tab.newToggle("Use fourth skill", "Uses your fourth skill while auto farming", t
     useFourthSkill = toggleState
 end)
 
+print("Rinns Hub On Top.")
 local autoBlockEnabled = false
 local detectionMode = "360"  -- Default detection mode
 local autoBlockRange = 50
+local autoPunchEnabled = false
 
 tab.newToggle("Auto Block", "Auto Blocks Blockable skills for you", true, function(toggleState)
     autoBlockEnabled = toggleState
     if toggleState then
-        print("On")
+        print("Auto Block On")
     else
-        print("Off")
+        print("Auto Block Off")
     end
 end)
 
@@ -464,6 +466,15 @@ end)
 tab.newDropdown("Detection Mode", "Select one of these options!", {"360", "Front Facing"}, function(selectedOption)
     detectionMode = selectedOption
     print("Detection Mode set to:", selectedOption)
+end)
+
+tab.newToggle("Auto Punch/Auto M1", "Auto Punches For You works with the auto block but you can't change the settings", true, function(toggleState)
+    autoPunchEnabled = toggleState
+    if toggleState then
+        print("Auto Punch On")
+    else
+        print("Auto Punch Off")
+    end
 end)
 
 -- Define the punch animations to detect
@@ -520,6 +531,11 @@ local skillAnimations = {
     ["16431491215"] = 0.7   -- Stone Coffin
 }
 
+-- Define the block animation to detect
+local blockAnimations = {
+    ["BlockingAnimationId"] = true -- Replace with the actual animation ID for blocking
+}
+
 -- Function to check if a player is within range
 local function isPlayerInRange(player, range)
     local localPlayer = game:GetService("Players").LocalPlayer
@@ -566,6 +582,19 @@ local function isLocalPlayerPlayingAnimation()
     for _, animTrack in pairs(character.Humanoid:GetPlayingAnimationTracks()) do
         local animId = animTrack.Animation.AnimationId:match("%d+$")
         if punchAnimations[animId] or dashAnimations[animId] or skillAnimations[animId] then
+            return true
+        end
+    end
+    return false
+end
+
+-- Function to check if the local player is blocking
+local function isLocalPlayerBlocking()
+    local localPlayer = game:GetService("Players").LocalPlayer
+    local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+    for _, animTrack in pairs(character.Humanoid:GetPlayingAnimationTracks()) do
+        local animId = animTrack.Animation.AnimationId:match("%d+$")
+        if blockAnimations[animId] then
             return true
         end
     end
@@ -660,10 +689,47 @@ local function detectAnimations()
     end
 end
 
--- Connect the detection function to RunService
+-- Function to perform auto punch
+local function autoPunch()
+    local players = game:GetService("Players")
+
+    for _, player in pairs(players:GetPlayers()) do
+        if player ~= players.LocalPlayer then
+            local inRange = false
+            if detectionMode == "360" then
+                inRange = isPlayerInRange(player, 7)
+            elseif detectionMode == "Front Facing" then
+                inRange = isPlayerInFrontFacingRange(player, 7)
+            end
+
+            if inRange and not isLocalPlayerBlocking() then
+                local args = {
+                    [1] = {
+                        ["Goal"] = "LeftClick",
+                        ["Mobile"] = true
+                    }
+                }
+                game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args))
+
+                local argsRelease = {
+                    [1] = {
+                        ["Goal"] = "LeftClickRelease",
+                        ["Mobile"] = true
+                    }
+                }
+                game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(argsRelease))
+            end
+        end
+    end
+end
+
+-- Connect the detection functions to RunService
 game:GetService("RunService").Heartbeat:Connect(function()
     if autoBlockEnabled then
         detectAnimations()
+    end
+    if autoPunchEnabled then
+        autoPunch()
     end
 end)
 
