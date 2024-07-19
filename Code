@@ -4,6 +4,15 @@ local window = DrRayLibrary:Load("Rinns Hub", "Default")
 
 local tab = DrRayLibrary.newTab("Main Tab", "ImageIdHere")
 
+local NotificationHolder = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Module.Lua"))()
+local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/BocusLuke/UI/main/STX/Client.Lua"))()
+
+Notification:Notify(
+    {Title = "IMPORTANT", Description = "If any of the toggles are already on turn it off and turn it back on again black = off green = on"},
+    {OutlineColor = Color3.fromRGB(80, 80, 80),Time = 10, Type = "option"},
+    {Image = "http://www.roblox.com/asset/?id=6023426923", ImageColor = Color3.fromRGB(255, 84, 84), Callback = function(State) print(tostring(State)) end}
+)
+
 -- List of animation IDs
 local animationIDs = {
     ["rbxassetid://10468665991"] = true,
