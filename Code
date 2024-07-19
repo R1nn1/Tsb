@@ -756,7 +756,7 @@ bigPart.Anchored = true
 bigPart.Parent = game.Workspace
 
 -- New Text Input for Combo Maker
-tab.newInput("Auto Combo", "Does the combo you put in it for you don't put the (punch();wait(x amount of time you want it to wait);firstskill();secondskill();thirdskill();fourthskill();dash();downslam();moveforward();movebackward())", function(text)
+tab.newInput("Auto Combo", "Does the combo you put in it for you (punch();wait(x amount of time you want it to wait);firstskill();secondskill();thirdskill();fourthskill();dash();downslam();moveforward();movebackward())", function(text)
     if text == "" then
         return
     end
