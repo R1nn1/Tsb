@@ -353,19 +353,43 @@ local useFirstSkill = false
 local useSecondSkill = false
 local useThirdSkill = false
 local useFourthSkill = false
+local ignoreFriends = false
+local specificPlayerUsername = ""
+local specificPlayerTarget = nil
+
+local function findClosestMatchingPlayer(inputName)
+    local players = game:GetService("Players"):GetPlayers()
+    local closestPlayer = nil
+    local closestDistance = math.huge
+
+    for _, player in pairs(players) do
+        local distance = string.len(player.Name) + string.len(inputName) - 2 * string.len(player.Name:sub(1, string.len(inputName)))
+        if distance < closestDistance then
+            closestDistance = distance
+            closestPlayer = player
+        end
+    end
+
+    return closestPlayer
+end
 
 local function autoFarm()
     local player = game:GetService("Players").LocalPlayer
     local targetPlayer
 
     while true do
-        wait(0.02)  -- Adjust the wait time as necessary
+        wait(0.02)
 
-        if not targetPlayer or not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("HumanoidRootPart") or targetPlayer.Character:FindFirstChildOfClass("Humanoid").Health <= 0 then
-            local players = game:GetService("Players"):GetPlayers()
-            repeat
-                targetPlayer = players[math.random(1, #players)]
-            until targetPlayer ~= player and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+        -- Select target player
+        if specificPlayerTarget then
+            targetPlayer = specificPlayerTarget
+        else
+            if not targetPlayer or not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("HumanoidRootPart") or targetPlayer.Character:FindFirstChildOfClass("Humanoid").Health <= 0 then
+                local players = game:GetService("Players"):GetPlayers()
+                repeat
+                    targetPlayer = players[math.random(1, #players)]
+                until targetPlayer ~= player and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") and (not ignoreFriends or not player:IsFriendsWith(targetPlayer.UserId))
+            end
         end
 
         if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
@@ -451,6 +475,20 @@ end)
 tab.newToggle("Use fourth skill", "Uses your fourth skill while auto farming", true, function(toggleState)
     useFourthSkill = toggleState
 end)
+
+tab.newInput("Auto Farm Specific Player", "Auto Farms A Specific User. Put their username or a short form of their username", function(text)
+    specificPlayerUsername = text
+    specificPlayerTarget = findClosestMatchingPlayer(specificPlayerUsername)
+end)
+
+tab.newButton("Stop Farming Specific Player", "Stops auto farming the specific player", function()
+    specificPlayerTarget = nil
+end)
+
+tab.newToggle("Auto Farm Ignore Friends", "The Auto Farm Will Ignore your Roblox friends only ignores roblox freinds bc u dont have irl ones", true, function(toggleState)
+    ignoreFriends = toggleState
+end)
+
 
 print("Rinns Hub On Top.")
 local autoBlockEnabled = false
