@@ -983,7 +983,7 @@ end)
 
 
 -- Toggle for Aimbot
-tab.newToggle("Aimbot", "Enables Aimbot to target the nearest player", false, function(toggleState)
+tab.newToggle("Aimbot", "Locks Your Camera on to anybody in the circle", false, function(toggleState)
     aimbotEnabled = toggleState
     if aimbotEnabled then
         local camera = game.Workspace.CurrentCamera
