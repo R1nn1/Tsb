@@ -1586,3 +1586,55 @@ tab.newButton("Serverhop", "Hop to another server", function()
         warn("No available servers found.")
     end
 end)
+
+local autoToxicEnabled = false
+
+tab.newToggle("Auto Toxic", "Says Something when someone dies lmao", true, function(toggleState)
+    autoToxicEnabled = toggleState
+    print(toggleState and "On" or "Off")
+end)
+
+-- Function to handle when a player dies
+local function onPlayerDied(player)
+    if autoToxicEnabled then
+        local displayName = player.DisplayName
+        local messages = {
+            displayName .. " wouldn't have died if they were using Rinns Hub",
+            displayName .. ", how did you die that fast?",
+            displayName .. ", how do you get put in a combo that easily bro"
+        }
+        
+        -- Randomly select one of the messages
+        local message = messages[math.random(1, #messages)]
+        
+        local args = {
+            [1] = message,
+            [2] = "All"
+        }
+
+        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(unpack(args))
+    end
+end
+
+-- Function to connect death detection for a player's character
+local function connectDeathDetection(player)
+    player.CharacterAdded:Connect(function(character)
+        local humanoid = character:WaitForChild("Humanoid", 10)
+        if humanoid then
+            humanoid.Died:Connect(function()
+                onPlayerDied(player)
+            end)
+        end
+    end)
+end
+
+-- Monitor new players joining the game
+game:GetService("Players").PlayerAdded:Connect(function(player)
+    connectDeathDetection(player)
+end)
+
+-- Handle existing players when the script is loaded
+for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+    connectDeathDetection(player)
+end
+
