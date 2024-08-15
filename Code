@@ -1588,11 +1588,14 @@ tab.newButton("Serverhop", "Hop to another server", function()
 end)
 
 local autoToxicEnabled = false
+print("trying to create the auto toxic toggle bruuuu")
 
 tab.newToggle("Auto Toxic", "Says Something when someone dies lmao", true, function(toggleState)
     autoToxicEnabled = toggleState
     print(toggleState and "On" or "Off")
 end)
+
+print("Auto Toxic created opppp")
 
 -- Function to handle when a player dies
 local function onPlayerDied(player)
